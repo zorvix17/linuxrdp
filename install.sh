@@ -1,819 +1,630 @@
 #!/bin/bash
-# ============================================================================
-# LINUX RDP PRO v10.0
-# Ultimate Linux RDP Hosting Platform
-# Advanced • Professional • Feature-Rich
-# ============================================================================
 
-set -euo pipefail
-trap 'cleanup_on_exit' EXIT
+# ============================================
+# CavrixCore RDP Installer
+# Advanced RDP Setup Script
+# Powered By: root@cavrix.core
+# ============================================
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-readonly VERSION="10.0.0"
-readonly SCRIPT_NAME="Linux RDP Pro"
-readonly BASE_DIR="${BASE_DIR:-$HOME/linux-rdp-pro}"
-readonly LOG_DIR="$BASE_DIR/logs"
-readonly CONFIG_DIR="$BASE_DIR/config"
-readonly BACKUP_DIR="$BASE_DIR/backups"
-readonly THEME_DIR="$BASE_DIR/themes"
-readonly APPS_DIR="$BASE_DIR/apps"
-readonly WALLPAPER_DIR="$BASE_DIR/wallpapers"
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
 
-# Directories
-mkdir -p "$BASE_DIR" "$LOG_DIR" "$CONFIG_DIR" "$BACKUP_DIR" \
-         "$THEME_DIR" "$APPS_DIR" "$WALLPAPER_DIR"
-
-# ============================================================================
-# ADVANCED COLOR SYSTEM
-# ============================================================================
-readonly COLOR_RESET="\033[0m"
-readonly COLOR_BLACK="\033[30m"
-readonly COLOR_RED="\033[31m"
-readonly COLOR_GREEN="\033[32m"
-readonly COLOR_YELLOW="\033[33m"
-readonly COLOR_BLUE="\033[34m"
-readonly COLOR_MAGENTA="\033[35m"
-readonly COLOR_CYAN="\033[36m"
-readonly COLOR_WHITE="\033[37m"
-readonly COLOR_ORANGE="\033[38;5;208m"
-readonly COLOR_PURPLE="\033[38;5;93m"
-readonly COLOR_NEON="\033[38;5;46m"
-readonly COLOR_GOLD="\033[38;5;220m"
-
-# Icons
-readonly IC_SUCCESS="✅"
-readonly IC_ERROR="❌"
-readonly IC_WARN="⚠️"
-readonly IC_INFO="ℹ️"
-readonly IC_LOAD="🔄"
-readonly IC_DONE="✨"
-readonly IC_RDP="🖥️"
-readonly IC_CHROME="🌐"
-readonly IC_APPS="📦"
-readonly IC_SECURITY="🔐"
-readonly IC_NETWORK="🌐"
-readonly IC_SETTINGS="⚙️"
-
-# ============================================================================
-# LOGGING SYSTEM
-# ============================================================================
-LOG_FILE="$LOG_DIR/linux-rdp-$(date +%Y%m%d).log"
-
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    case "$level" in
-        "SUCCESS") echo -e "${COLOR_GREEN}$IC_SUCCESS $message${COLOR_RESET}" ;;
-        "ERROR") echo -e "${COLOR_RED}$IC_ERROR $message${COLOR_RESET}" ;;
-        "WARN") echo -e "${COLOR_YELLOW}$IC_WARN $message${COLOR_RESET}" ;;
-        "INFO") echo -e "${COLOR_CYAN}$IC_INFO $message${COLOR_RESET}" ;;
-        "DEBUG") echo -e "${COLOR_BLUE}$message${COLOR_RESET}" ;;
-    esac
-    
-    echo "[$timestamp] [$level] $message" >> "$LOG_FILE"
-}
-
-# ============================================================================
-# BANNER WITH CUSTOM ART
-# ============================================================================
-show_banner() {
-    clear
-    echo -e "${COLOR_NEON}"
-    cat << "EOF"
-   ______                 _         ______              
-  / ____/___ __   _______(_)  __   / ____/___  ________ 
- / /   / __ `/ | / / ___/ / |/_/  / /   / __ \/ ___/ _ \
-/ /___/ /_/ /| |/ / /  / />  <   / /___/ /_/ / /  /  __/
-\____/\__,_/ |___/_/  /_/_/|_|   \____/\____/_/   \___/
+# ASCII Art
+clear
+echo -e "${CYAN}"
+cat << "EOF"
+ ██████╗ █████╗ ██╗   ██╗██████╗ ██╗██╗  ██╗    ██████╗ ██████╗ ██████╗ 
+██╔════╝██╔══██╗██║   ██║██╔══██╗██║╚██╗██╔╝    ██╔══██╗██╔══██╗██╔══██╗
+██║     ███████║██║   ██║██████╔╝██║ ╚███╔╝     ██████╔╝██║  ██║██████╔╝
+██║     ██╔══██║╚██╗ ██╔╝██╔══██╗██║ ██╔██╗     ██╔══██╗██║  ██║██╔═══╝ 
+╚██████╗██║  ██║ ╚████╔╝ ██║  ██║██║██╔╝ ██╗    ██║  ██║██████╔╝██║     
+ ╚═════╝╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═════╝ ╚═╝     
 EOF
-    echo -e "${COLOR_RESET}"
-    echo -e "${COLOR_CYAN}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-    echo -e "${COLOR_CYAN}                    Linux RDP Professional v${VERSION}                  ${COLOR_RESET}"
-    echo -e "${COLOR_CYAN}               Ultimate Remote Desktop Solution                       ${COLOR_RESET}"
-    echo -e "${COLOR_CYAN}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-    echo ""
+echo -e "${MAGENTA}"
+echo "╔═══════════════════════════════════════════════════════════════╗"
+echo "║                  CavrixCore RDP Installer                     ║"
+echo "║                Powered By: root@cavrix.core                   ║"
+echo "╚═══════════════════════════════════════════════════════════════╝"
+echo -e "${NC}"
+
+# Configuration
+DEBIAN_FRONTEND=noninteractive
+LOG_FILE="/var/log/cavrixcore-rdp-install.log"
+BACKUP_DIR="/root/cavrixcore-backup-$(date +%Y%m%d_%H%M%S)"
+INSTALL_DIR="/opt/cavrixcore"
+CONFIG_DIR="/etc/cavrixcore"
+
+# Function: Log messages
+log_message() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 }
 
-# ============================================================================
-# DETECT LINUX DISTRIBUTION
-# ============================================================================
-detect_distro() {
-    if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        echo "$ID"
-    elif [[ -f /etc/debian_version ]]; then
-        echo "debian"
-    elif [[ -f /etc/redhat-release ]]; then
-        echo "centos"
-    elif [[ -f /etc/arch-release ]]; then
-        echo "arch"
-    else
-        echo "unknown"
+# Function: Print status
+print_status() {
+    case $1 in
+        "info") echo -e "${BLUE}[*]${NC} $2" ;;
+        "success") echo -e "${GREEN}[✓]${NC} $2" ;;
+        "warning") echo -e "${YELLOW}[!]${NC} $2" ;;
+        "error") echo -e "${RED}[✗]${NC} $2" ;;
+    esac
+    log_message "$2"
+}
+
+# Function: Check root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        print_status "error" "This script must be run as root"
+        exit 1
     fi
 }
 
-# ============================================================================
-# PACKAGE MANAGER FUNCTIONS
-# ============================================================================
-install_package() {
-    local pkg="$1"
-    local distro=$(detect_distro)
+# Function: Check internet
+check_internet() {
+    print_status "info" "Checking internet connection..."
+    if ! ping -c 1 -W 3 8.8.8.8 &> /dev/null; then
+        print_status "error" "No internet connection"
+        exit 1
+    fi
+    print_status "success" "Internet connection OK"
+}
+
+# Function: Backup system
+backup_system() {
+    print_status "info" "Creating system backup..."
+    mkdir -p "$BACKUP_DIR"
     
-    case "$distro" in
-        ubuntu|debian)
-            sudo apt install -y "$pkg" 2>/dev/null || log "WARN" "Failed to install $pkg"
+    # Backup important files
+    cp /etc/ssh/sshd_config "$BACKUP_DIR/" 2>/dev/null
+    cp /etc/xrdp/xrdp.ini "$BACKUP_DIR/" 2>/dev/null
+    cp /etc/xrdp/sesman.ini "$BACKUP_DIR/" 2>/dev/null
+    
+    # Backup package list
+    dpkg --get-selections > "$BACKUP_DIR/package-list.txt" 2>/dev/null
+    
+    print_status "success" "Backup created at: $BACKUP_DIR"
+}
+
+# Function: Detect OS
+detect_os() {
+    print_status "info" "Detecting operating system..."
+    
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$NAME
+        VER=$VERSION_ID
+        OS_ID=$ID
+    elif type lsb_release >/dev/null 2>&1; then
+        OS=$(lsb_release -si)
+        VER=$(lsb_release -sr)
+        OS_ID=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+    else
+        OS=$(uname -s)
+        VER=$(uname -r)
+        OS_ID="unknown"
+    fi
+    
+    print_status "success" "Detected: $OS $VER ($OS_ID)"
+    
+    if [[ "$OS_ID" != "ubuntu" && "$OS_ID" != "debian" ]]; then
+        print_status "warning" "This script is optimized for Ubuntu/Debian systems"
+        read -p "Continue anyway? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+}
+
+# Function: System update
+system_update() {
+    print_status "info" "Updating system packages..."
+    
+    apt-get update -y >> "$LOG_FILE" 2>&1
+    if [ $? -eq 0 ]; then
+        apt-get upgrade -y >> "$LOG_FILE" 2>&1
+        apt-get dist-upgrade -y >> "$LOG_FILE" 2>&1
+        apt-get autoremove -y >> "$LOG_FILE" 2>&1
+        apt-get autoclean -y >> "$LOG_FILE" 2>&1
+        print_status "success" "System updated successfully"
+    else
+        print_status "error" "Failed to update system"
+        exit 1
+    fi
+}
+
+# Function: Install Desktop Environment
+install_desktop() {
+    print_status "info" "Select Desktop Environment:"
+    echo "  1) XFCE (Lightweight - Recommended)"
+    echo "  2) GNOME (Full-featured)"
+    echo "  3) KDE Plasma (Modern)"
+    echo "  4) MATE (Traditional)"
+    echo "  5) Cinnamon (User-friendly)"
+    read -p "Enter choice [1-5]: " de_choice
+    
+    case $de_choice in
+        1)
+            DESKTOP="xfce4"
+            DESKTOP_NAME="XFCE"
             ;;
-        centos|rhel|fedora)
-            sudo yum install -y "$pkg" 2>/dev/null || sudo dnf install -y "$pkg" 2>/dev/null
+        2)
+            DESKTOP="ubuntu-gnome-desktop"
+            DESKTOP_NAME="GNOME"
             ;;
-        arch)
-            sudo pacman -S --noconfirm "$pkg" 2>/dev/null
+        3)
+            DESKTOP="kde-plasma-desktop"
+            DESKTOP_NAME="KDE Plasma"
+            ;;
+        4)
+            DESKTOP="ubuntu-mate-desktop"
+            DESKTOP_NAME="MATE"
+            ;;
+        5)
+            DESKTOP="cinnamon-desktop-environment"
+            DESKTOP_NAME="Cinnamon"
             ;;
         *)
-            log "ERROR" "Unsupported distribution: $distro"
-            return 1
+            DESKTOP="xfce4"
+            DESKTOP_NAME="XFCE"
+            print_status "info" "Defaulting to XFCE"
             ;;
     esac
-}
-
-update_system() {
-    local distro=$(detect_distro)
     
-    log "INFO" "Updating system packages..."
-    case "$distro" in
-        ubuntu|debian)
-            sudo apt update && sudo apt upgrade -y
-            ;;
-        centos|rhel)
-            sudo yum update -y
-            ;;
-        fedora)
-            sudo dnf update -y
-            ;;
-        arch)
-            sudo pacman -Syu --noconfirm
-            ;;
-    esac
-}
-
-# ============================================================================
-# MAIN INSTALLATION FUNCTION
-# ============================================================================
-install_linux_rdp() {
-    show_banner
+    print_status "info" "Installing $DESKTOP_NAME..."
     
-    log "INFO" "Starting Linux RDP Professional Installation..."
-    echo ""
+    # Install basic display manager
+    apt-get install -y lightdm lightdm-gtk-greeter >> "$LOG_FILE" 2>&1
     
-    # Check if running as root
-    if [[ $EUID -eq 0 ]]; then
-        log "WARN" "Running as root. Creating non-root user..."
-        read -p "Enter username for RDP access: " username
-        if id "$username" &>/dev/null; then
-            log "INFO" "User $username already exists"
-        else
-            sudo useradd -m -s /bin/bash "$username"
-            sudo passwd "$username"
-            log "SUCCESS" "User $username created"
-        fi
-        USERNAME="$username"
+    # Install selected desktop
+    apt-get install -y "$DESKTOP" >> "$LOG_FILE" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        print_status "success" "$DESKTOP_NAME installed successfully"
     else
-        USERNAME=$(whoami)
+        print_status "error" "Failed to install $DESKTOP_NAME"
+        exit 1
     fi
     
-    # Update system
-    update_system
-    
-    # Step 1: Install Desktop Environment
-    log "INFO" "Step 1: Installing Desktop Environment..."
-    install_desktop_environment
-    
-    # Step 2: Install xRDP
-    log "INFO" "Step 2: Installing xRDP..."
-    install_xrdp
-    
-    # Step 3: Install Google Chrome
-    log "INFO" "Step 3: Installing Google Chrome..."
-    install_google_chrome
-    
-    # Step 4: Install Recommended Applications
-    log "INFO" "Step 4: Installing Recommended Applications..."
-    install_recommended_apps
-    
-    # Step 5: Configure System
-    log "INFO" "Step 5: Configuring System..."
-    configure_system
-    
-    # Step 6: Security Setup
-    log "INFO" "Step 6: Setting up Security..."
-    setup_security
-    
-    # Step 7: Performance Optimization
-    log "INFO" "Step 7: Optimizing Performance..."
-    optimize_performance
-    
-    # Display connection information
-    show_connection_info
-    
-    log "SUCCESS" "Installation complete!"
+    # Set lightdm as default
+    systemctl set-default graphical.target >> "$LOG_FILE" 2>&1
+    systemctl enable lightdm >> "$LOG_FILE" 2>&1
 }
 
-# ============================================================================
-# DESKTOP ENVIRONMENT INSTALLATION
-# ============================================================================
-install_desktop_environment() {
-    local distro=$(detect_distro)
-    
-    log "INFO" "Available Desktop Environments:"
-    echo "  1) XFCE (Lightweight, Recommended)"
-    echo "  2) GNOME (Modern, Feature-rich)"
-    echo "  3) KDE Plasma (Beautiful, Customizable)"
-    echo "  4) MATE (Traditional, Stable)"
-    echo "  5) Cinnamon (User-friendly)"
-    echo "  6) LXQt (Ultra Lightweight)"
-    
-    read -p "Select desktop environment (1-6): " de_choice
-    
-    case $de_choice in
-        1) de_packages="xfce4 xfce4-goodies" ;;
-        2) de_packages="gnome gnome-extra" ;;
-        3) de_packages="kde-plasma-desktop" ;;
-        4) de_packages="mate-desktop-environment" ;;
-        5) de_packages="cinnamon-desktop-environment" ;;
-        6) de_packages="lxqt" ;;
-        *) de_packages="xfce4 xfce4-goodies" ;;
-    esac
-    
-    log "INFO" "Installing $de_packages..."
-    install_package "$de_packages"
-    
-    # Set default session
-    case $de_choice in
-        1) echo "xfce4-session" > ~/.xsession ;;
-        2) echo "gnome-session" > ~/.xsession ;;
-        3) echo "startplasma-x11" > ~/.xsession ;;
-        4) echo "mate-session" > ~/.xsession ;;
-        5) echo "cinnamon-session" > ~/.xsession ;;
-        6) echo "startlxqt" > ~/.xsession ;;
-    esac
-    
-    chown $USERNAME:$USERNAME ~/.xsession
-    log "SUCCESS" "Desktop environment installed"
-}
-
-# ============================================================================
-# XRDP INSTALLATION
-# ============================================================================
+# Function: Install xRDP
 install_xrdp() {
-    local distro=$(detect_distro)
+    print_status "info" "Installing xRDP..."
     
-    case "$distro" in
-        ubuntu|debian)
-            sudo apt install -y xrdp xorgxrdp xrdp-pulseaudio-installer
-            ;;
-        centos|rhel)
-            sudo yum install -y epel-release
-            sudo yum install -y xrdp tigervnc-server
-            ;;
-        fedora)
-            sudo dnf install -y xrdp tigervnc-server
-            ;;
-        arch)
-            sudo pacman -S --noconfirm xrdp xorgxrdp
-            ;;
-    esac
+    # Install xRDP and dependencies
+    apt-get install -y xrdp xorgxrdp xorg dbus-x11 >> "$LOG_FILE" 2>&1
+    
+    if [ $? -eq 0 ]; then
+        print_status "success" "xRDP installed successfully"
+    else
+        print_status "error" "Failed to install xRDP"
+        exit 1
+    fi
     
     # Configure xRDP
-    sudo systemctl enable xrdp
-    sudo systemctl enable xrdp-sesman
+    print_status "info" "Configuring xRDP..."
     
-    # Configure xRDP to use different port (3390)
-    sudo sed -i 's/port=3389/port=3390/g' /etc/xrdp/xrdp.ini
+    # Backup original config
+    cp /etc/xrdp/xrdp.ini /etc/xrdp/xrdp.ini.backup
+    cp /etc/xrdp/sesman.ini /etc/xrdp/sesman.ini.backup
     
-    # Optimize xRDP settings
-    sudo cat >> /etc/xrdp/xrdp.ini << 'EOF'
-max_bpp=24
+    # Optimize xRDP configuration
+    cat > /etc/xrdp/xrdp.ini << EOF
+[globals]
+bitmap_cache=yes
+bitmap_compression=yes
+port=3389
+crypt_level=high
+channel_code=1
+max_bpp=32
+# CavrixCore Configuration
 use_compression=yes
-compression_level=2
-tcp_nodelay=true
-tcp_keepalive=true
+tcp_nodelay=yes
+tcp_keepalive=yes
+# Security
+security_layer=negotiate
+certificate=
+key_file=
+
+[xrdp1]
+name=sesman-Xvnc
+lib=libvnc.so
+username=ask
+password=ask
+ip=127.0.0.1
+port=-1
 EOF
     
-    log "SUCCESS" "xRDP installed and configured"
+    # Configure session manager
+    sed -i 's/^MaxSession=.*/MaxSession=50/' /etc/xrdp/sesman.ini
+    sed -i 's/^KillDisconnected=.*/KillDisconnected=1/' /etc/xrdp/sesman.ini
+    sed -i 's/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=600/' /etc/xrdp/sesman.ini
+    sed -i 's/^IdleTimeLimit=.*/IdleTimeLimit=1800/' /etc/xrdp/sesman.ini
+    
+    print_status "success" "xRDP configured"
 }
 
-# ============================================================================
-# GOOGLE CHROME INSTALLATION
-# ============================================================================
-install_google_chrome() {
-    local distro=$(detect_distro)
-    
-    log "INFO" "Installing Google Chrome..."
-    
-    case "$distro" in
-        ubuntu|debian)
-            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-            echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-            sudo apt update
-            sudo apt install -y google-chrome-stable
-            ;;
-        centos|rhel|fedora)
-            sudo dnf install -y https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-            ;;
-        arch)
-            # Chrome is not officially available on Arch, install Chromium instead
-            sudo pacman -S --noconfirm chromium
-            ;;
-    esac
-    
-    # Create Chrome desktop shortcut
-    cat > ~/Desktop/google-chrome.desktop << 'EOF'
-[Desktop Entry]
-Name=Google Chrome
-Comment=Access the Internet
-Exec=google-chrome-stable --no-sandbox
-Icon=google-chrome
-Terminal=false
-Type=Application
-Categories=Network;WebBrowser;
-EOF
-    
-    chmod +x ~/Desktop/google-chrome.desktop
-    log "SUCCESS" "Google Chrome installed"
-}
-
-# ============================================================================
-# RECOMMENDED APPLICATIONS
-# ============================================================================
-install_recommended_apps() {
-    log "INFO" "Installing recommended applications..."
-    
-    # Categories of applications
-    local office_apps="libreoffice libreoffice-gtk3"
-    local media_apps="vlc gimp audacity"
-    local dev_apps="code git python3 nodejs npm"
-    local utils_apps="filezilla remmina thunderbird flameshot"
-    local terminal_apps="tilix terminator"
-    
-    # Install by category
-    log "INFO" "Installing Office Suite..."
-    install_package "$office_apps"
-    
-    log "INFO" "Installing Media Applications..."
-    install_package "$media_apps"
-    
-    log "INFO" "Installing Development Tools..."
-    install_package "$dev_apps"
-    
-    log "INFO" "Installing Utilities..."
-    install_package "$utils_apps"
-    
-    log "INFO" "Installing Terminal Emulators..."
-    install_package "$terminal_apps"
-    
-    # Install VS Code if not installed
-    if ! command -v code &>/dev/null; then
-        log "INFO" "Installing Visual Studio Code..."
-        case $(detect_distro) in
-            ubuntu|debian)
-                wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-                sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
-                echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | sudo tee /etc/apt/sources.list.d/vscode.list
-                sudo apt update
-                sudo apt install -y code
-                ;;
-            fedora|centos|rhel)
-                sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-                echo '[code]' | sudo tee /etc/yum.repos.d/vscode.repo
-                echo 'name=Visual Studio Code' | sudo tee -a /etc/yum.repos.d/vscode.repo
-                echo 'baseurl=https://packages.microsoft.com/yumrepos/vscode' | sudo tee -a /etc/yum.repos.d/vscode.repo
-                echo 'enabled=1' | sudo tee -a /etc/yum.repos.d/vscode.repo
-                echo 'gpgcheck=1' | sudo tee -a /etc/yum.repos.d/vscode.repo
-                echo 'gpgkey=https://packages.microsoft.com/keys/microsoft.asc' | sudo tee -a /etc/yum.repos.d/vscode.repo
-                sudo dnf install -y code
-                ;;
-        esac
-    fi
-    
-    # Create desktop shortcuts
-    create_desktop_shortcuts
-    
-    log "SUCCESS" "Recommended applications installed"
-}
-
-create_desktop_shortcuts() {
-    # LibreOffice
-    cat > ~/Desktop/libreoffice.desktop << 'EOF'
-[Desktop Entry]
-Name=LibreOffice
-Comment=Office Suite
-Exec=libreoffice
-Icon=libreoffice-main
-Terminal=false
-Type=Application
-Categories=Office;
-EOF
-    
-    # VLC Media Player
-    cat > ~/Desktop/vlc.desktop << 'EOF'
-[Desktop Entry]
-Name=VLC Media Player
-Comment=Play media files
-Exec=vlc
-Icon=vlc
-Terminal=false
-Type=Application
-Categories=AudioVideo;Player;
-EOF
-    
-    # Visual Studio Code
-    cat > ~/Desktop/vscode.desktop << 'EOF'
-[Desktop Entry]
-Name=Visual Studio Code
-Comment=Code Editing
-Exec=code
-Icon=code
-Terminal=false
-Type=Application
-Categories=Development;IDE;
-EOF
-    
-    # FileZilla
-    cat > ~/Desktop/filezilla.desktop << 'EOF'
-[Desktop Entry]
-Name=FileZilla
-Comment=FTP Client
-Exec=filezilla
-Icon=filezilla
-Terminal=false
-Type=Application
-Categories=Network;FileTransfer;
-EOF
-    
-    chmod +x ~/Desktop/*.desktop
-}
-
-# ============================================================================
-# SYSTEM CONFIGURATION
-# ============================================================================
-configure_system() {
-    log "INFO" "Configuring system settings..."
-    
-    # Configure display manager
-    configure_display_manager
-    
-    # Configure audio
-    configure_audio
-    
-    # Configure printing
-    configure_printing
-    
-    # Configure network
-    configure_network
-    
-    # Configure firewall
-    configure_firewall
-    
-    log "SUCCESS" "System configured"
-}
-
-configure_display_manager() {
-    local distro=$(detect_distro)
-    
-    case "$distro" in
-        ubuntu|debian)
-            sudo DEBIAN_FRONTEND=noninteractive apt install -y lightdm
-            sudo systemctl enable lightdm
-            ;;
-        centos|rhel|fedora)
-            sudo systemctl enable gdm
-            ;;
-    esac
-}
-
-configure_audio() {
-    install_package "pulseaudio pulseaudio-utils pavucontrol"
-    sudo systemctl --user enable pulseaudio
-}
-
-configure_printing() {
-    install_package "cups cups-client"
-    sudo systemctl enable cups
-}
-
-configure_network() {
-    install_package "network-manager network-manager-gnome"
-    sudo systemctl enable NetworkManager
-}
-
+# Function: Configure Firewall
 configure_firewall() {
-    if command -v ufw &>/dev/null; then
-        sudo ufw allow 3390/tcp
-        sudo ufw reload
-    elif command -v firewall-cmd &>/dev/null; then
-        sudo firewall-cmd --permanent --add-port=3390/tcp
-        sudo firewall-cmd --reload
-    fi
-}
-
-# ============================================================================
-# SECURITY SETUP
-# ============================================================================
-setup_security() {
-    log "INFO" "Setting up security features..."
+    print_status "info" "Configuring firewall..."
     
-    # Change RDP port for security
-    read -p "Change RDP port from 3390? (y/N): " change_port
-    if [[ "$change_port" =~ ^[Yy]$ ]]; then
-        read -p "Enter new RDP port (1024-65535): " new_port
-        sudo sed -i "s/port=3390/port=$new_port/g" /etc/xrdp/xrdp.ini
-        RDP_PORT="$new_port"
+    # Check if ufw is available
+    if command -v ufw &> /dev/null; then
+        ufw allow 3389/tcp >> "$LOG_FILE" 2>&1
+        ufw allow ssh >> "$LOG_FILE" 2>&1
+        ufw --force enable >> "$LOG_FILE" 2>&1
+        print_status "success" "Firewall configured (UFW)"
+    elif command -v firewall-cmd &> /dev/null; then
+        firewall-cmd --permanent --add-port=3389/tcp >> "$LOG_FILE" 2>&1
+        firewall-cmd --permanent --add-service=ssh >> "$LOG_FILE" 2>&1
+        firewall-cmd --reload >> "$LOG_FILE" 2>&1
+        print_status "success" "Firewall configured (firewalld)"
     else
-        RDP_PORT="3390"
-    fi
-    
-    # Setup SSL for xRDP
-    setup_ssl
-    
-    # Install and configure fail2ban
-    setup_fail2ban
-    
-    # Configure SSH (if installed)
-    setup_ssh
-    
-    log "SUCCESS" "Security features configured"
-}
-
-setup_ssl() {
-    log "INFO" "Setting up SSL encryption..."
-    
-    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout /etc/ssl/private/xrdp.key \
-        -out /etc/ssl/certs/xrdp.crt \
-        -subj "/C=US/ST=State/L=City/O=Organization/CN=$(hostname)"
-    
-    sudo chmod 600 /etc/ssl/private/xrdp.key
-    
-    # Configure xRDP to use SSL
-    sudo cat >> /etc/xrdp/xrdp.ini << 'EOF'
-tls_ciphers=HIGH
-certificate=/etc/ssl/certs/xrdp.crt
-key_file=/etc/ssl/private/xrdp.key
-EOF
-}
-
-setup_fail2ban() {
-    if install_package "fail2ban"; then
-        sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-        
-        # Add xRDP jail
-        sudo cat > /etc/fail2ban/jail.d/xrdp.local << EOF
-[xrdp]
-enabled = true
-port = $RDP_PORT
-filter = xrdp
-logpath = /var/log/xrdp-sesman.log
-maxretry = 3
-bantime = 3600
-EOF
-        
-        sudo systemctl enable fail2ban
-        sudo systemctl start fail2ban
+        print_status "warning" "No supported firewall found"
     fi
 }
 
-setup_ssh() {
-    if command -v sshd &>/dev/null; then
-        log "INFO" "Hardening SSH configuration..."
-        
-        # Backup original config
-        sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
-        
-        # Apply security settings
-        sudo sed -i 's/#PermitRootLogin yes/PermitRootLogin no/g' /etc/ssh/sshd_config
-        sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
-        sudo sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/g' /etc/ssh/sshd_config
-        
-        sudo systemctl restart sshd
-    fi
-}
-
-# ============================================================================
-# PERFORMANCE OPTIMIZATION
-# ============================================================================
+# Function: Optimize Performance
 optimize_performance() {
-    log "INFO" "Optimizing system performance..."
+    print_status "info" "Applying performance optimizations..."
     
-    # Configure swap
-    configure_swap
-    
-    # Configure sysctl
-    configure_sysctl
-    
-    # Configure services
-    optimize_services
-    
-    # Install performance tools
-    install_performance_tools
-    
-    log "SUCCESS" "Performance optimization complete"
-}
+    # Create optimization script
+    mkdir -p "$INSTALL_DIR"
+    cat > "$INSTALL_DIR/optimize.sh" << 'EOF'
+#!/bin/bash
+# CavrixCore Performance Optimizations
 
-configure_swap() {
-    local total_ram=$(free -m | awk '/^Mem:/{print $2}')
-    local swap_size=$((total_ram * 2))
-    
-    if [[ ! -f /swapfile ]]; then
-        log "INFO" "Creating swap file..."
-        sudo fallocate -l ${swap_size}M /swapfile
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile
-        sudo swapon /swapfile
-        echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-    fi
-}
+# Disable unnecessary services
+systemctl disable bluetooth.service 2>/dev/null
+systemctl disable cups.service 2>/dev/null
+systemctl disable avahi-daemon.service 2>/dev/null
 
-configure_sysctl() {
-    sudo cat >> /etc/sysctl.conf << 'EOF'
-# Performance tuning
-vm.swappiness=10
-vm.vfs_cache_pressure=50
-net.core.rmem_max=134217728
-net.core.wmem_max=134217728
-net.ipv4.tcp_rmem=4096 87380 134217728
-net.ipv4.tcp_wmem=4096 65536 134217728
-net.ipv4.tcp_congestion_control=bbr
+# Optimize swappiness
+echo "vm.swappiness=10" >> /etc/sysctl.conf
+
+# Optimize network
+echo "net.core.rmem_max = 134217728" >> /etc/sysctl.conf
+echo "net.core.wmem_max = 134217728" >> /etc/sysctl.conf
+echo "net.ipv4.tcp_rmem = 4096 87380 134217728" >> /etc/sysctl.conf
+echo "net.ipv4.tcp_wmem = 4096 65536 134217728" >> /etc/sysctl.conf
+
+# Apply changes
+sysctl -p
 EOF
     
-    sudo sysctl -p
-}
-
-optimize_services() {
-    # Disable unnecessary services
-    local services=("bluetooth" "cups-browsed" "ModemManager" "avahi-daemon")
+    chmod +x "$INSTALL_DIR/optimize.sh"
+    "$INSTALL_DIR/optimize.sh" >> "$LOG_FILE" 2>&1
     
-    for service in "${services[@]}"; do
-        if systemctl list-unit-files | grep -q "$service.service"; then
-            sudo systemctl disable "$service" 2>/dev/null
-        fi
-    done
+    print_status "success" "Performance optimizations applied"
 }
 
-install_performance_tools() {
-    local tools="htop iotop iftop nmon sysstat"
-    install_package "$tools"
+# Function: Enable Audio Redirection (experimental)
+enable_audio() {
+    print_status "info" "Enable audio redirection? (y/N): "
+    read -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "info" "Installing audio support..."
+        apt-get install -y pulseaudio pulseaudio-module-xrdp >> "$LOG_FILE" 2>&1
+        
+        # Configure PulseAudio for xRDP
+        cat > /etc/pulse/default.pa << 'EOF'
+#!/usr/bin/pulseaudio -nF
+.nofail
+.fail
+load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1;192.168.0.0/16;10.0.0.0/8;172.16.0.0/12
+load-module module-zeroconf-publish
+load-module module-suspend-on-idle
+load-module module-position-event-sounds
+load-module module-role-cork
+load-module module-always-sink
+load-module module-switch-on-connect
+EOF
+        
+        systemctl --user enable pulseaudio >> "$LOG_FILE" 2>&1
+        print_status "success" "Audio redirection enabled"
+    fi
 }
 
-# ============================================================================
-# CONNECTION INFORMATION
-# ============================================================================
-show_connection_info() {
-    local ip_address=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
-    local username=$USERNAME
+# Function: Install Additional Tools
+install_tools() {
+    print_status "info" "Installing additional tools..."
     
+    # Basic utilities
+    apt-get install -y \
+        htop \
+        net-tools \
+        curl \
+        wget \
+        git \
+        nano \
+        vim \
+        screen \
+        tmux \
+        zip \
+        unzip \
+        software-properties-common \
+        gnupg \
+        ca-certificates >> "$LOG_FILE" 2>&1
+    
+    # Web browser
+    apt-get install -y firefox-esr >> "$LOG_FILE" 2>&1
+    
+    # File manager
+    apt-get install -y thunar nautilus >> "$LOG_FILE" 2>&1
+    
+    # Terminal
+    apt-get install -y xfce4-terminal gnome-terminal >> "$LOG_FILE" 2>&1
+    
+    print_status "success" "Additional tools installed"
+}
+
+# Function: Create User Management
+create_user_management() {
+    print_status "info" "Setting up user management..."
+    
+    cat > "$INSTALL_DIR/user-manager.sh" << 'EOF'
+#!/bin/bash
+# CavrixCore User Manager
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+echo "CavrixCore User Management"
+echo "=========================="
+echo "1) Create new RDP user"
+echo "2) Change user password"
+echo "3) List all users"
+echo "4) Add user to sudo group"
+echo "5) Exit"
+echo
+
+read -p "Select option: " choice
+
+case $choice in
+    1)
+        read -p "Enter username: " username
+        adduser $username
+        usermod -aG sudo $username 2>/dev/null
+        echo -e "${GREEN}User $username created${NC}"
+        ;;
+    2)
+        read -p "Enter username: " username
+        passwd $username
+        ;;
+    3)
+        echo "System users:"
+        echo "-------------"
+        awk -F: '{ if ($3 >= 1000 && $3 <= 60000) print $1 }' /etc/passwd
+        ;;
+    4)
+        read -p "Enter username: " username
+        usermod -aG sudo $username
+        echo -e "${GREEN}User $username added to sudo group${NC}"
+        ;;
+    5)
+        exit 0
+        ;;
+    *)
+        echo -e "${RED}Invalid option${NC}"
+        ;;
+esac
+EOF
+    
+    chmod +x "$INSTALL_DIR/user-manager.sh"
+    
+    # Create admin user if not exists
+    if ! id "cavrixadmin" &>/dev/null; then
+        useradd -m -s /bin/bash cavrixadmin
+        echo "cavrixadmin:$(openssl rand -base64 12)" | chpasswd
+        usermod -aG sudo cavrixadmin
+        print_status "success" "Default admin user created: cavrixadmin"
+        print_status "warning" "Please change cavrixadmin password immediately!"
+    fi
+    
+    print_status "success" "User management setup complete"
+}
+
+# Function: Create Monitoring Script
+create_monitoring() {
+    print_status "info" "Setting up monitoring..."
+    
+    cat > "$INSTALL_DIR/monitor.sh" << 'EOF'
+#!/bin/bash
+# CavrixCore System Monitor
+
+echo "======================================"
+echo "     CavrixCore System Monitor"
+echo "======================================"
+echo "Last updated: $(date)"
+echo
+
+# System Info
+echo "=== System Information ==="
+echo "Hostname: $(hostname)"
+echo "Uptime: $(uptime -p)"
+echo "OS: $(cat /etc/os-release | grep PRETTY_NAME | cut -d= -f2 | tr -d '"')"
+echo "Kernel: $(uname -r)"
+echo
+
+# CPU Usage
+echo "=== CPU Usage ==="
+echo "$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')"
+echo
+
+# Memory Usage
+echo "=== Memory Usage ==="
+free -h | awk '/^Mem:/ {print "Total: " $2 " | Used: " $3 " | Free: " $4 " | Usage: " $3/$2*100 "%"}'
+echo
+
+# Disk Usage
+echo "=== Disk Usage ==="
+df -h / | awk 'NR==2 {print "Total: " $2 " | Used: " $3 " | Free: " $4 " | Usage: " $5}'
+echo
+
+# Active RDP Sessions
+echo "=== Active RDP Sessions ==="
+netstat -tn | grep :3389 | wc -l | awk '{print "Active RDP connections: " $1}'
+echo
+
+# System Load
+echo "=== System Load ==="
+cat /proc/loadavg | awk '{print "1min: " $1 " | 5min: " $2 " | 15min: " $3}'
+echo
+
+# Services Status
+echo "=== Services Status ==="
+systemctl is-active xrdp | awk '{print "xRDP: " $0}'
+systemctl is-active lightdm | awk '{print "LightDM: " $0}'
+systemctl is-active ssh | awk '{print "SSH: " $0}'
+echo
+EOF
+    
+    chmod +x "$INSTALL_DIR/monitor.sh"
+    
+    # Create cron job for monitoring
+    cat > /etc/cron.d/cavrixcore-monitor << EOF
+# CavrixCore System Monitoring
+*/5 * * * * root $INSTALL_DIR/monitor.sh >> /var/log/cavrixcore-status.log
+EOF
+    
+    print_status "success" "Monitoring system setup complete"
+}
+
+# Function: Display Connection Info
+display_info() {
     clear
-    show_banner
-    
-    echo -e "${COLOR_GREEN}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-    echo -e "${COLOR_GREEN}                    INSTALLATION COMPLETE!                           ${COLOR_RESET}"
-    echo -e "${COLOR_GREEN}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
+    echo -e "${CYAN}"
+    cat << "EOF"
+ ██████╗ █████╗ ██╗   ██╗██████╗ ██╗██╗  ██╗    ██████╗ ██████╗ ██████╗ 
+██╔════╝██╔══██╗██║   ██║██╔══██╗██║╚██╗██╔╝    ██╔══██╗██╔══██╗██╔══██╗
+██║     ███████║██║   ██║██████╔╝██║ ╚███╔╝     ██████╔╝██║  ██║██████╔╝
+██║     ██╔══██║╚██╗ ██╔╝██╔══██╗██║ ██╔██╗     ██╔══██╗██║  ██║██╔═══╝ 
+╚██████╗██║  ██║ ╚████╔╝ ██║  ██║██║██╔╝ ██╗    ██║  ██║██████╔╝██║     
+ ╚═════╝╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝    ╚═╝  ╚═╝╚═════╝ ╚═╝     
+EOF
+    echo -e "${MAGENTA}"
+    echo "╔═══════════════════════════════════════════════════════════════╗"
+    echo "║              CavrixCore RDP Installation Complete            ║"
+    echo "║                Powered By: root@cavrix.core                  ║"
+    echo "╚═══════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
     echo ""
-    
-    echo -e "${COLOR_CYAN}📡 REMOTE DESKTOP CONNECTION INFORMATION:${COLOR_RESET}"
-    echo -e "  ${COLOR_YELLOW}IP Address:${COLOR_RESET}   $ip_address"
-    echo -e "  ${COLOR_YELLOW}RDP Port:${COLOR_RESET}     $RDP_PORT"
-    echo -e "  ${COLOR_YELLOW}Username:${COLOR_RESET}     $username"
-    echo -e "  ${COLOR_YELLOW}Password:${COLOR_RESET}     Your system password"
+    echo -e "${GREEN}✅ Installation Completed Successfully!${NC}"
     echo ""
-    
-    echo -e "${COLOR_CYAN}🖥️  CONNECTION METHODS:${COLOR_RESET}"
-    echo -e "  ${COLOR_YELLOW}Windows:${COLOR_RESET}      Remote Desktop → mstsc /v:$ip_address:$RDP_PORT"
-    echo -e "  ${COLOR_YELLOW}Linux:${COLOR_RESET}        xfreerdp /v:$ip_address:$RDP_PORT /u:$username"
-    echo -e "  ${COLOR_YELLOW}Mac:${COLOR_RESET}          Microsoft Remote Desktop → $ip_address:$RDP_PORT"
-    echo -e "  ${COLOR_YELLOW}Android:${COLOR_RESET}      RD Client → $ip_address:$RDP_PORT"
+    echo "======================== CONNECTION INFO ========================"
     echo ""
-    
-    echo -e "${COLOR_CYAN}📦 INSTALLED APPLICATIONS:${COLOR_RESET}"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} Google Chrome"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} LibreOffice Suite"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} VLC Media Player"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} Visual Studio Code"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} FileZilla FTP Client"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} GIMP Image Editor"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} Audacity Audio Editor"
-    echo -e "  ${COLOR_GREEN}•${COLOR_RESET} Terminal Emulators"
+    echo -e "${YELLOW}🔗 RDP Connection:${NC}"
+    echo -e "   Host: $(curl -s ifconfig.me || hostname -I | awk '{print $1}')"
+    echo -e "   Port: 3389"
+    echo -e "   Username: Your system username"
     echo ""
-    
-    echo -e "${COLOR_CYAN}🔧 MANAGEMENT COMMANDS:${COLOR_RESET}"
-    echo -e "  ${COLOR_YELLOW}Start RDP:${COLOR_RESET}    sudo systemctl start xrdp"
-    echo -e "  ${COLOR_YELLOW}Stop RDP:${COLOR_RESET}     sudo systemctl stop xrdp"
-    echo -e "  ${COLOR_YELLOW}Status:${COLOR_RESET}       sudo systemctl status xrdp"
-    echo -e "  ${COLOR_YELLOW}Restart:${COLOR_RESET}      sudo systemctl restart xrdp"
+    echo -e "${YELLOW}🖥️  Desktop Environment:${NC} $DESKTOP_NAME"
     echo ""
-    
-    echo -e "${COLOR_CYAN}⚠️  SECURITY NOTES:${COLOR_RESET}"
-    echo "  1. Change your password regularly"
-    echo "  2. Keep system updated"
-    echo "  3. Use firewall rules"
-    echo "  4. Monitor login attempts"
-    echo "  5. Consider using VPN"
+    echo -e "${YELLOW}🔧 Management Tools:${NC}"
+    echo -e "   User Manager: ${INSTALL_DIR}/user-manager.sh"
+    echo -e "   System Monitor: ${INSTALL_DIR}/monitor.sh"
+    echo -e "   Performance Optimizer: ${INSTALL_DIR}/optimize.sh"
     echo ""
-    
-    echo -e "${COLOR_GREEN}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-    echo -e "${COLOR_GREEN}             Your Linux RDP is ready for use!                        ${COLOR_RESET}"
-    echo -e "${COLOR_GREEN}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-    
-    # Start RDP service
-    sudo systemctl start xrdp
+    echo -e "${YELLOW}📊 Services Status:${NC}"
+    systemctl is-active xrdp | awk '{print "   xRDP: " $0}'
+    systemctl is-active lightdm | awk '{print "   LightDM: " $0}'
     echo ""
-    echo -e "${COLOR_GREEN}✅ RDP service started on port $RDP_PORT${COLOR_RESET}"
+    echo -e "${YELLOW}📝 Installation Log:${NC} $LOG_FILE"
+    echo -e "${YELLOW}💾 Backup Location:${NC} $BACKUP_DIR"
+    echo ""
+    echo "======================== SECURITY NOTES ========================="
+    echo ""
+    echo -e "${RED}⚠️  IMPORTANT SECURITY ACTIONS REQUIRED:${NC}"
+    echo "   1. Change default passwords immediately!"
+    echo "   2. Configure firewall rules as needed"
+    echo "   3. Enable automatic security updates"
+    echo "   4. Regularly check system logs"
+    echo ""
+    echo "======================== QUICK COMMANDS ========================="
+    echo ""
+    echo "   Check RDP status: sudo systemctl status xrdp"
+    echo "   Restart RDP: sudo systemctl restart xrdp"
+    echo "   View active sessions: netstat -tn | grep :3389"
+    echo "   Monitor system: $INSTALL_DIR/monitor.sh"
+    echo ""
+    echo "================================================================="
+    echo ""
+    echo -e "${BLUE}Thank you for using CavrixCore RDP Installer!${NC}"
+    echo ""
 }
 
-# ============================================================================
-# CLEANUP FUNCTION
-# ============================================================================
-cleanup_on_exit() {
-    echo ""
-    log "INFO" "Cleaning up temporary files..."
-    rm -rf /tmp/linux-rdp-*
-    log "SUCCESS" "Cleanup complete"
+# Function: Enable Auto Updates
+enable_auto_updates() {
+    print_status "info" "Enabling automatic security updates..."
+    
+    apt-get install -y unattended-upgrades >> "$LOG_FILE" 2>&1
+    
+    cat > /etc/apt/apt.conf.d/50unattended-upgrades << 'EOF'
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+    "${distro_id}ESM:${distro_codename}";
+};
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "false";
+EOF
+    
+    cat > /etc/apt/apt.conf.d/20auto-upgrades << 'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+    
+    print_status "success" "Automatic updates enabled"
 }
 
-# ============================================================================
-# MAIN MENU
-# ============================================================================
-show_menu() {
-    while true; do
-        show_banner
-        
-        echo -e "${COLOR_CYAN}Main Menu:${COLOR_RESET}"
-        echo -e "${COLOR_BLUE}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-        echo ""
-        echo -e "  ${COLOR_GREEN}1)${COLOR_RESET} ${IC_RDP} Install Linux RDP Professional"
-        echo -e "  ${COLOR_GREEN}2)${COLOR_RESET} ${IC_CHROME} Install Additional Applications"
-        echo -e "  ${COLOR_GREEN}3)${COLOR_RESET} ${IC_SECURITY} Security Configuration"
-        echo -e "  ${COLOR_GREEN}4)${COLOR_RESET} ${IC_SETTINGS} System Settings"
-        echo -e "  ${COLOR_GREEN}5)${COLOR_RESET} ${IC_NETWORK} Network Configuration"
-        echo -e "  ${COLOR_GREEN}6)${COLOR_RESET} 📊 Performance Monitor"
-        echo -e "  ${COLOR_GREEN}7)${COLOR_RESET} 🛠️  Troubleshooting"
-        echo -e "  ${COLOR_GREEN}8)${COLOR_RESET} 📋 System Information"
-        echo -e "  ${COLOR_RED}0)${COLOR_RESET} 🚪 Exit"
-        echo ""
-        echo -e "${COLOR_BLUE}══════════════════════════════════════════════════════════════════════${COLOR_RESET}"
-        
-        read -p "$(echo -e "${COLOR_CYAN}Select option: ${COLOR_RESET}")" choice
-        
-        case $choice in
-            1) install_linux_rdp ;;
-            2) install_additional_apps ;;
-            3) security_menu ;;
-            4) system_settings_menu ;;
-            5) network_config_menu ;;
-            6) performance_monitor ;;
-            7) troubleshooting_menu ;;
-            8) system_info ;;
-            0)
-                echo ""
-                log "SUCCESS" "Thank you for using Linux RDP Professional!"
-                exit 0
-                ;;
-            *)
-                log "ERROR" "Invalid option"
-                ;;
-        esac
-        
-        echo ""
-        read -p "$(echo -e "${COLOR_CYAN}Press Enter to continue...${COLOR_RESET}")"
-    done
-}
-
-# ============================================================================
-# MAIN FUNCTION
-# ============================================================================
+# Main installation process
 main() {
-    # Check if running with sudo
-    if [[ $EUID -eq 0 ]]; then
-        log "WARN" "Please run this script as a regular user (not root)"
-        exit 1
-    fi
+    echo -e "${BOLD}Starting CavrixCore RDP Installation...${NC}"
+    echo ""
     
-    # Check internet connection
-    if ! ping -c 1 google.com &>/dev/null; then
-        log "ERROR" "No internet connection. Please check your network."
-        exit 1
-    fi
+    # Run all functions
+    check_root
+    check_internet
+    detect_os
+    backup_system
+    system_update
+    install_desktop
+    install_xrdp
+    configure_firewall
+    optimize_performance
+    enable_audio
+    install_tools
+    create_user_management
+    create_monitoring
+    enable_auto_updates
     
-    # Start main menu
-    show_menu
+    # Start services
+    print_status "info" "Starting services..."
+    systemctl restart xrdp >> "$LOG_FILE" 2>&1
+    systemctl enable xrdp >> "$LOG_FILE" 2>&1
+    systemctl restart lightdm >> "$LOG_FILE" 2>&1
+    
+    # Display completion
+    display_info
 }
 
-# ============================================================================
-# RUN SCRIPT
-# ============================================================================
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+# Execute main function
+main
+
+# Exit
+exit 0
